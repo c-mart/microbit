@@ -12,11 +12,11 @@ Pin 8: send 'brightness down' command
 Pin 12: send 'brightness up' and 'enter brightness menu' commands
 Pin 16: send 'exit brightness menu' command
 
-TODO:
+todo:
 - Calculate relative change instead of flattening when changing bright_map? Perhaps a better algorithm exists
 - Save bright_map to flash memory to remember between reboots
 
-TADA:
+tada:
 - Don't do anything if monitor is off, detect this with voltage on LED pin?
 - If buttons are pressed on micro:bit, enter brightness menu loop. Displays current brightness, push buttons to go up and down. Waits 3 seconds, then saves current value to flash
 - How to influence neighboring values? Display brightness should monotonically increase with LDR value. If a user input is saved, any resulting non-monotonic parts of the curve can be "flattened"
@@ -40,14 +40,14 @@ def round_down_50(x):
     return x - (x % 50)
 
 
-def press_button(pin_obj, count=1, press_duration=65):
+def press_button(pin_obj, count=1, press_duration=70):
     # Cycles pin_num count number of times, to press corresponding buttons for press_duration milliseconds
     # Monitor doesn't recognize all presses if press_duration/sleep values are decreased from default
     for i in range(count):
         pin_obj.write_digital(1)
         sleep(press_duration)
         pin_obj.write_digital(0)
-        sleep(65)
+        sleep(70)
 
 
 def change_brightness(increment, enter_exit_menu=True):
@@ -55,7 +55,7 @@ def change_brightness(increment, enter_exit_menu=True):
     if enter_exit_menu:
         # Push 'brightness up' button to enter brightness menu
         press_button(pin12)
-        sleep(500)
+        sleep(700)
     # Going down
     if increment < 0:
         press_button(pin8, abs(increment))
@@ -74,7 +74,7 @@ def reset_to_0():
     press_button(pin12)  # Enter brightness menu
     sleep(100)
     press_button(pin8, press_duration=6500)  # Hold down button to bring brightness to 0
-    sleep(50)
+    sleep(200)
     press_button(pin16)  # Exit brightness menu
     sleep(400)
 
@@ -156,9 +156,10 @@ while True:
         new_bright = user_adjust(cur_bright, cur_ldr_val)
     elif last_change_ldr_val is None or abs(cur_ldr_val - last_change_ldr_val) >= 50:
         new_bright = bright_map[round_down_50(cur_ldr_val)]
-        display.scroll(str(new_bright), wait=False)
-        change_brightness(new_bright - cur_bright)
-        sleep(1500)
+        if new_bright != cur_bright:
+            display.scroll(str(new_bright), wait=False)
+            change_brightness(new_bright - cur_bright)
+            sleep(1500)
 
     if new_bright != cur_bright:
         cur_bright = new_bright
