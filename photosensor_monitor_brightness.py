@@ -56,11 +56,9 @@ def change_brightness(increment, enter_exit_menu=True):
         # Push 'brightness up' button to enter brightness menu
         press_button(pin12)
         sleep(700)
-    # Going down
-    if increment < 0:
+    if increment < 0:  # Going down
         press_button(pin8, abs(increment))
-    # Going up
-    else:
+    else:  # Going up
         press_button(pin12, increment)
     if enter_exit_menu:
         sleep(200)
