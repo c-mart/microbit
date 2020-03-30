@@ -17,7 +17,7 @@ game_speed = 50  # Time step in milliseconds between game states. Lower numbers 
 reload_delay = 30  # Number of time steps that it takes to reload, during which you cannot shoot
 
 # Initial setup
-radio.enable(32, 4)
+radio.on()
 packet_header = b'qaivre'  # Prepended to all transmissions to avoid interference from other micro:bit radio activity
 self_pos = 2
 other_pos = 2
@@ -28,13 +28,13 @@ other_cur_reload_delay = 0
 
 def send_valid(packet):
     # Appends packet header to packet bytes object and transmits on the radio
-    radio.send(packet_header + packet)
+    radio.send_bytes(packet_header + packet)
 
 
 def recv_valid():
     # Checks for received radio transmission and validates it (confirms it starts with packet header)
     # Strips the packet header and returns message
-    rec_raw = radio.recv()
+    rec_raw = radio.receive_bytes()
     if rec_raw is not None and rec_raw.startswith(packet_header):
         return rec_raw[len(packet_header):]
     else:
