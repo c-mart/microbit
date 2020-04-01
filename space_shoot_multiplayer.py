@@ -77,7 +77,7 @@ while True:
 while True:
     # Restart game on game over
     if game_over:
-        display.scroll(str(self_score) + ":" + str(other_score), delay=80)
+        display.scroll(str(self_score) + ":" + str(other_score), delay=80, monospace=True)
         display.scroll("GO", delay=80)
         self_pos, other_pos = 2, 2
         self_shoot, other_shoot = None, None
@@ -101,11 +101,13 @@ while True:
     # Receive transmissions from the other player
     rec = recv_valid()
     if rec is not None:
-        if 0 <= ord(rec) <= 4:  # Other player moves
-            other_pos = ord(rec)
+        if 0 <= rec[0] <= 4:  # Other player moves
+            other_pos = rec[0]
         elif rec == b'\xff':  # Other player shoots
             other_shoot = (4 - other_pos, 0)
             other_cur_reload_delay = reload_delay
+        elif rec.startswith(b'\xfd'):  # Other player scores
+            other_score = rec[1]
 
     # Draw spaceships
     display.clear()
@@ -123,6 +125,7 @@ while True:
                 show_explosion(4 - other_pos, 0)
                 self_score += 1
                 game_over = True
+                radio.send_bytes(b'\xfd' + bytes([self_score]))
             else:
                 self_shoot = None
     if other_shoot is not None:
