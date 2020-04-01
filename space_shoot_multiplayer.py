@@ -19,12 +19,11 @@ reload_delay = 30  # Number of time steps that it takes to reload, during which 
 # Initial setup
 radio.on()
 packet_header = b'qaivre'  # Prepended to all transmissions to avoid interference from other micro:bit radio activity
-self_pos = 2
-other_pos = 2
+self_pos, other_pos = 2, 2
 self_shoot, other_shoot = None, None  # None if not fired, otherwise tuple of x and y coordinates on display
-self_cur_reload_delay = 0
-other_cur_reload_delay = 0
-
+self_cur_reload_delay, other_cur_reload_delay = 0, 0
+self_score, other_score = 0, 0
+game_over = False
 
 def send_valid(packet):
     # Appends packet header to packet bytes object and transmits on the radio
@@ -76,6 +75,15 @@ while True:
 
 # Main loop of game
 while True:
+    # Restart game on game over
+    if game_over:
+        display.scroll(str(self_score) + ":" + str(other_score), delay=80, monospace=True)
+        display.scroll("GO", delay=80)
+        self_pos, other_pos = 2, 2
+        self_shoot, other_shoot = None, None
+        self_cur_reload_delay, other_cur_reload_delay = 0, 0
+        game_over = False
+
     # Look for and act on button presses
     if button_a.is_pressed() and button_b.is_pressed():
         button_a.get_presses() and button_b.get_presses()  # Clear button presses
@@ -93,11 +101,13 @@ while True:
     # Receive transmissions from the other player
     rec = recv_valid()
     if rec is not None:
-        if 0 <= ord(rec) <= 4:  # Other player moves
-            other_pos = ord(rec)
+        if 0 <= rec[0] <= 4:  # Other player moves
+            other_pos = rec[0]
         elif rec == b'\xff':  # Other player shoots
             other_shoot = (4 - other_pos, 0)
             other_cur_reload_delay = reload_delay
+        elif rec.startswith(b'\xfd'):  # Other player scores
+            other_score = rec[1]
 
     # Draw spaceships
     display.clear()
@@ -113,8 +123,9 @@ while True:
         if self_shoot[1] < 0:
             if self_shoot[0] == 4 - other_pos:
                 show_explosion(4 - other_pos, 0)
-                display.scroll("YOU WIN", delay=80)
-                break
+                self_score += 1
+                game_over = True
+                radio.send_bytes(b'\xfd' + bytes([self_score]))
             else:
                 self_shoot = None
     if other_shoot is not None:
@@ -123,8 +134,8 @@ while True:
         if other_shoot[1] == 4:
             if other_shoot[0] == self_pos:
                 show_explosion(self_pos, 4)
-                display.scroll("YOU LOSE", delay=80)
-                break
+                other_score += 1
+                game_over = True
             else:
                 other_shoot = None
 
